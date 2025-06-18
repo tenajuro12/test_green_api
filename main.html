@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GREEN-API Test Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
+            min-height: 600px;
+        }
+
+        .left-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .right-panel {
+            flex: 1;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        input[type="text"], input[type="tel"], textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus, input[type="tel"]:focus, textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .api-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #f5f5f5;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .api-button:hover {
+            background-color: #e8e8e8;
+            border-color: #4CAF50;
+        }
+
+        .api-button:active {
+            transform: scale(0.98);
+        }
+
+        .response-area {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: none;
+            background-color: #f9f9f9;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .header-label {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="form-group">
+                    <input type="text" id="idInstance" placeholder="idInstance" />
+                    <input type="text" id="apiTokenInstance" placeholder="apiTokenInstance" />
+                </div>
+                
+                <button class="api-button" onclick="getSettings()">getSettings</button>
+                <button class="api-button" onclick="getStateInstance()">getStateInstance</button>
+                
+                <div class="form-group">
+                    <input type="tel" id="phoneNumber" placeholder="79771234567" />
+                    <input type="text" id="messageText" placeholder="Hello World!" />
+                    <button class="api-button" onclick="sendMessage()">sendMessage</button>
+                </div>
+                
+                <div class="form-group">
+                    <input type="tel" id="phoneNumberFile" placeholder="79771234567" />
+                    <input type="text" id="fileUrl" placeholder="https://my.site.com/img/horse.png" />
+                    <button class="api-button" onclick="sendFileByUrl()">sendFileByUrl</button>
+                </div>
+            </div>
+            
+            <div class="right-panel">
+                <div class="header-label">Ответ:</div>
+                <textarea class="response-area" id="responseArea" readonly></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://api.green-api.com';
+        
+        async function apiCall(endpoint, method = 'GET', body = null) {
+            const idInstance = document.getElementById('idInstance').value;
+            const apiTokenInstance = document.getElementById('apiTokenInstance').value;
+            
+            if (!idInstance || !apiTokenInstance) {
+                document.getElementById('responseArea').value = 'Ошибка: Введите idInstance и apiTokenInstance';
+                return;
+            }
+            
+            try {
+                const url = `${API_URL}/waInstance${idInstance}/${endpoint}/${apiTokenInstance}`;
+                const options = { method };
+                
+                if (body) {
+                    options.headers = { 'Content-Type': 'application/json' };
+                    options.body = JSON.stringify(body);
+                }
+                
+                const response = await fetch(url, options);
+                const data = await response.json();
+                document.getElementById('responseArea').value = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('responseArea').value = `Ошибка: ${error.message}`;
+            }
+        }
+        
+        function getSettings() {
+            apiCall('getSettings');
+        }
+        
+        function getStateInstance() {
+            apiCall('getStateInstance');
+        }
+        
+        function sendMessage() {
+            const phone = document.getElementById('phoneNumber').value;
+            const message = document.getElementById('messageText').value;
+            
+            if (!phone || !message) {
+                document.getElementById('responseArea').value = 'Ошибка: Введите номер телефона и сообщение';
+                return;
+            }
+            
+            apiCall('sendMessage', 'POST', {
+                chatId: phone.includes('@') ? phone : `${phone}@c.us`,
+                message: message
+            });
+        }
+        
+        function sendFileByUrl() {
+            const phone = document.getElementById('phoneNumberFile').value;
+            const url = document.getElementById('fileUrl').value;
+            
+            if (!phone || !url) {
+                document.getElementById('responseArea').value = 'Ошибка: Введите номер телефона и URL файла';
+                return;
+            }
+            
+            apiCall('sendFileByUrl', 'POST', {
+                chatId: phone.includes('@') ? phone : `${phone}@c.us`,
+                urlFile: url,
+                fileName: url.split('/').pop() || 'file.png',
+                caption: 'Файл отправлен через GREEN-API'
+            });
+        }
+    </script>
+</body>
+</html>
